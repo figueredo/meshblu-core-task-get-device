@@ -1,90 +1,59 @@
-GetDevice = require '../src/get-device'
+mongojs = require 'mongojs'
+Datastore = require 'meshblu-core-datastore'
+GetDevice = require '../'
 
 describe 'GetDevice', ->
+  beforeEach (done) ->
+    @datastore = new Datastore
+      database: mongojs('meshblu-core-task-update-device')
+      collection: 'devices'
+
+    @datastore.remove done
+
   beforeEach ->
-    @datastore =
-      findOne: sinon.stub()
-    @sut = new GetDevice datastore: @datastore
+    @uuidAliasResolver = resolve: (uuid, callback) => callback(null, uuid)
+    @sut = new GetDevice {@datastore, @uuidAliasResolver}
 
   describe '->do', ->
-    describe 'when called with a type query', ->
+    describe 'when the device does not exist in the datastore', ->
       beforeEach (done) ->
-        @datastore.findOne.yields null, uuid: 'really-great-chevy', type: 'exploding-star'
-        job =
+        request =
           metadata:
-            responseId: 'supernova'
-          rawData: '{"type":"exploding-star"}'
+            responseId: 'used-as-biofuel'
+            auth:
+              uuid: 'thank-you-for-considering'
+              token: 'the-environment'
+            toUuid: 'thank-you-for-considering'
 
-        @sut.do job, (error, @response) => done error
+        @sut.do request, (error, @response) => done error
 
-      it 'should have a responseId', ->
-        expect(@response.metadata.responseId).to.equal 'supernova'
+      it 'should respond with a 404', ->
+        expect(@response.metadata.code).to.equal 404
 
-      it 'should have a status code of 200', ->
-        expect(@response.metadata.code).to.equal 200
-
-      it 'should have a responseId', ->
-        expect(@response.metadata.status).to.equal 'OK'
-
-      it 'should have a device in the response', ->
-        expect(JSON.parse(@response.rawData)).to.deep.equal uuid: 'really-great-chevy', type: 'exploding-star'
-
-    describe 'when called with a different type query', ->
+    describe 'when the device does exists in the datastore', ->
       beforeEach (done) ->
-        @datastore.findOne.yields null, uuid: 'hanged-by-the-british', type: 'put-er-there'
-        job =
-          metadata:
-            responseId: 'welcome-aboard'
-          rawData: '{"type":"put-er-there"}'
+        record =
+          uuid: 'thank-you-for-considering'
+          token: 'never-gonna-guess-me'
+          meshblu:
+            tokens:
+              'GpJaXFa3XlPf657YgIpc20STnKf2j+DcTA1iRP5JJcg=': {}
+        @datastore.insert record, done
 
-        @sut.do job, (error, @response) => done error
+      describe 'when called', ->
+        beforeEach (done) ->
+          request =
+            metadata:
+              responseId: 'used-as-biofuel'
+              auth:
+                uuid: 'thank-you-for-considering'
+                token: 'the-environment'
+              toUuid: 'thank-you-for-considering'
 
-      it 'should have a responseId', ->
-        expect(@response.metadata.responseId).to.equal 'welcome-aboard'
+          @sut.do request, (error, @response) => done error
 
-      it 'should have a status code of 200', ->
-        expect(@response.metadata.code).to.equal 200
+        it 'should respond with a 200', ->
+          expect(@response.metadata.code).to.equal 200
 
-      it 'should have a responseId', ->
-        expect(@response.metadata.status).to.equal 'OK'
-
-      it 'should have a device in the response', ->
-        expect(JSON.parse(@response.rawData)).to.deep.equal uuid: 'hanged-by-the-british', type: 'put-er-there'
-
-    describe 'when called with an invalid query', ->
-      beforeEach (done) ->
-        job =
-          metadata:
-            responseId: 'gallows-humor'
-          rawData: 'this should break'
-
-        @sut.do job, (error, @response) => done error
-
-      it 'should have a responseId', ->
-        expect(@response.metadata.responseId).to.equal 'gallows-humor'
-
-      it 'should have a status code of 400', ->
-        expect(@response.metadata.code).to.equal 400
-
-      it 'should have a responseId', ->
-        expect(@response.metadata.status).to.equal 'Bad Request'
-
-    describe 'when findOne yields an error', ->
-      beforeEach (done) ->
-        @datastore.findOne.yields new Error "it-is-definitely-broke"
-        
-        job =
-          metadata:
-            responseId: 'harpoon'
-          rawData: '{"$$set":"sweet"}'
-
-        @sut.do job, (error, @response) => done error
-
-      it 'should have a responseId', ->
-        expect(@response.metadata.responseId).to.equal 'harpoon'
-
-      it 'should have a status code of 400', ->
-        expect(@response.metadata.code).to.equal 500
-
-      it 'should have a responseId', ->
-        expect(@response.metadata.status).to.equal 'Internal Server Error'
+        it 'should return the data', ->
+          expect(@response.data).to.contain uuid: 'thank-you-for-considering'

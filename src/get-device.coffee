@@ -1,24 +1,23 @@
 http = require 'http'
 
 class GetDevice
-  constructor: ({@datastore}={}) ->
+  constructor: ({@datastore,@uuidAliasResolver}) ->
 
   do: (job, callback) =>
-    {responseId} = job.metadata
-    try
-      query = JSON.parse job.rawData
-    catch error
-      return callback null, @generateResponse 400, responseId
+    {toUuid} = job.metadata
 
-    @datastore.findOne query, (error, result) =>
-      return callback null, @generateResponse 500, responseId if error?
-      callback null, @generateResponse 200, responseId, result
+    @uuidAliasResolver.resolve toUuid, (error, uuid) =>
+      return callback error if error?
 
-  generateResponse: (code, responseId, data) =>
-    metadata:
-      code: code
-      status: http.STATUS_CODES[code]
-      responseId: responseId
-    rawData: JSON.stringify data
+      @datastore.findOne {uuid}, (error, result) =>
+        return callback error if error?
+        return callback null, metadata: code: 404 unless result?
+
+        response =
+          metadata:
+            code: 200
+          data: result
+
+        return callback null, response
 
 module.exports = GetDevice
