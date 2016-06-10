@@ -1,22 +1,21 @@
-http = require 'http'
+http          = require 'http'
+DeviceManager = require 'meshblu-core-manager-device'
 
 class GetDevice
-  constructor: ({@datastore,@uuidAliasResolver}) ->
+  constructor: ({datastore,uuidAliasResolver}) ->
+     @deviceManager = new DeviceManager {datastore, uuidAliasResolver}
 
   do: (job, callback) =>
-    {toUuid} = job.metadata
+    { toUuid } = job.metadata
 
-    @uuidAliasResolver.resolve toUuid, (error, uuid) =>
-      return callback error if error?
-
-      @datastore.findOne {uuid}, (error, result) =>
+    @deviceManager.findOne { uuid: toUuid }, (error, device) =>
         return callback error if error?
-        return callback null, metadata: code: 404 unless result?
+        return callback null, metadata: code: 404 unless device?
 
         response =
           metadata:
             code: 200
-          data: result
+          data: device
 
         return callback null, response
 
