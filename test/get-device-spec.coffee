@@ -5,11 +5,13 @@ GetDevice = require '../'
 
 describe 'GetDevice', ->
   beforeEach (done) ->
-    @datastore = new Datastore
-      database: mongojs('meshblu-core-task-update-device')
+    database = mongojs('meshblu-core-task-get-device', ['devices'])
+    @datastore = new Datastore {
+      database,
       collection: 'devices'
+    }
 
-    @datastore.remove done
+    database.devices.remove done
 
   beforeEach ->
     @uuidAliasResolver = resolve: (uuid, callback) => callback(null, uuid)
@@ -64,6 +66,8 @@ describe 'GetDevice', ->
         record =
           uuid: 'i-hate-you-for-considering'
           token: 'never-gonna-guess-me-haha'
+          online: true
+          cheeseburger: 'yes'
           meshblu:
             tokens:
               'GpJaXFa3XlPf657YgIpc20STnKf2j+DcTA1iRP5JJcg=': {}
@@ -90,3 +94,4 @@ describe 'GetDevice', ->
         it 'should return the data', ->
           expect(@response.data.uuid).to.equal 'i-hate-you-for-considering'
           expect(@response.data.$foo).to.equal 'bar'
+          expect(@response.data.cheeseburger).to.equal 'yes'

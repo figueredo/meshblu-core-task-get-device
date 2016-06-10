@@ -9,14 +9,14 @@ class GetDevice
     { toUuid } = job.metadata
 
     @deviceManager.findOne { uuid: toUuid }, (error, device) =>
-        return callback error if error?
-        return callback null, metadata: code: 404 unless device?
+      return callback error if error?
+      return callback null, metadata: code: 404 unless device?
 
-        response =
-          metadata:
-            code: 200
-          data: device
+      response =
+        metadata:
+          code: 200
+        data: device
 
-        return callback null, response
+      return callback null, response
 
 module.exports = GetDevice
