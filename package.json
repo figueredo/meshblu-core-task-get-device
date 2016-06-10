@@ -1,6 +1,6 @@
 {
   "name": "meshblu-core-task-get-device",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Get Device",
   "main": "index.js",
   "directories": {
@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "meshblu-core-datastore": "^4.6.0",
-    "meshblu-core-manager-device": "^2.4.6",
+    "meshblu-core-manager-device": "^2.4.8",
     "mongojs": "^2.0.0"
   },
   "devDependencies": {
